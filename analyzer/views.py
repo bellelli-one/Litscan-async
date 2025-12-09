@@ -42,52 +42,46 @@ def calculate_canberra_similarity(target, book):
     return max(0.0, similarity)
 
 def long_calculation_task(payload):
-    try:
-        app_id = payload.get("id")
-        
-        # === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
-        # Раньше было: target_vector = payload["target"]
-        # Теперь собираем вручную из корня:
-        target_vector = {
-            "avg_word_len": payload.get("avg_word_len", 0),
-            "lexical_diversity": payload.get("lexical_diversity", 0),
-            "conjunction_freq": payload.get("conjunction_freq", 0),
-            "avg_sentence_len": payload.get("avg_sentence_len", 0)
-        }
-        
-        books_vectors = payload.get("books", [])
-        
-        print(f"Start analyzing app {app_id}. Books: {len(books_vectors)}")
-        time.sleep(10) # Имитация работы
-        
-        if not books_vectors:
-            return {"id": app_id, "data": {"status": 5, "probability": 0.0}}
+    app_id = payload.get("id")
+    
+    target_vector = {
+        "avg_word_len": payload.get("avg_word_len", 0),
+        "lexical_diversity": payload.get("lexical_diversity", 0),
+        "conjunction_freq": payload.get("conjunction_freq", 0),
+        "avg_sentence_len": payload.get("avg_sentence_len", 0)
+    }
+    
+    books_vectors = payload.get("books", [])
+    
+    # ... sleep ...
+    time.sleep(10)
+    total_similarity = 0.0
+    book_results = [] # <--- Список для результатов по книгам
 
-        total_similarity = 0.0
+    for book in books_vectors:
+        # Считаем для одной книги
+        sim = calculate_canberra_similarity(target_vector, book)
         
-        for book in books_vectors:
-            sim = calculate_canberra_similarity(target_vector, book)
-            total_similarity += sim
-            
-        avg_probability = total_similarity / len(books_vectors)
-        print(f"App {app_id} match probability: {avg_probability:.2%}")
+        # Добавляем в общую сумму
+        total_similarity += sim
+        
+        # Запоминаем результат для этой книги
+        # ВАЖНО: book_id должен быть в JSON, который присылает Go (он там есть в DTO)
+        book_results.append({
+            "book_id": book.get("book_id"), 
+            "similarity": sim
+        })
+        
+    # avg_probability = total_similarity / len(books_vectors) if books_vectors else 0
 
-        final_status = 4 if avg_probability > 0.6 else 5
+    # final_status = 4 if avg_probability > 0.6 else 5
 
-        # Формируем ответ для Go
-        result = {
-            "status": final_status,
-            "response": f"Вероятность успеха: {avg_probability:.2%}", # <-- Отправляем результат
-            # Если хочешь обновить текст response:
-            # "response": f"Вероятность успеха: {avg_probability:.2%}"
-        }
-        
-        return {"id": app_id, "data": result}
-        
-    except Exception as e:
-        print(f"Error inside calculation task: {e}")
-        # Возвращаем ошибку, чтобы хотя бы статус сменился (например, на rejected)
-        return {"id": payload.get("id"), "data": {"status": 5}}
+    result = {
+        "status": 3,
+        "book_results": book_results  # <--- ОТПРАВЛЯЕМ СПИСОК В GO
+    }
+    
+    return {"id": app_id, "data": result}
 
 def task_callback(future):
     try:
