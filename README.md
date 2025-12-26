@@ -8,5 +8,5 @@
 
 - **GitHubPages**: https://bellelli-one.github.io/Litscan-Frontend/
 - **Бэкенд (основной веб-сервис)**: https://github.com/bellelli-one/Litscan
-- **Бэкенд (асинхронный сервис)**: https://github.com/bellelli-one/
+- **Бэкенд (асинхронный сервис)**: https://github.com/bellelli-one/Litscan-async
 - **Фронтенд**: https://github.com/bellelli-one/Litscan-Frontend
