@@ -5,24 +5,17 @@ import time
 import requests
 from concurrent import futures
 
-# Убедись, что адрес правильный (порт 8090)
 MAIN_SERVICE_URL = "http://localhost:8090/api/analysebookscalc/"
 SECRET_KEY = "secret12"
 
 executor = futures.ThreadPoolExecutor(max_workers=2)
 
 def calculate_canberra_similarity(target, book):
-    """
-    Считает схожесть.
-    target - словарь с идеальными метриками.
-    book - словарь с метриками книги.
-    """
-    # Ключи должны совпадать с тем, что приходит в JSON (snake_case)
+
     keys = ["avg_word_len", "lexical_diversity", "conjunction_freq", "avg_sentence_len"]
     distance = 0.0
     
     for k in keys:
-        # float() нужен, чтобы защититься от None
         try:
             p = float(target.get(k, 0) or 0)
             q = float(book.get(k, 0) or 0)
@@ -36,7 +29,6 @@ def calculate_canberra_similarity(target, book):
             
         distance += term
 
-    # 4 метрики -> макс расстояние 4. Нормируем к 1.
     dimensions = 4.0
     similarity = 1.0 - (distance / dimensions)
     return max(0.0, similarity)
@@ -56,17 +48,13 @@ def long_calculation_task(payload):
     # ... sleep ...
     time.sleep(10)
     total_similarity = 0.0
-    book_results = [] # <--- Список для результатов по книгам
+    book_results = []
 
     for book in books_vectors:
-        # Считаем для одной книги
         sim = calculate_canberra_similarity(target_vector, book)
         
-        # Добавляем в общую сумму
         total_similarity += sim
-        
-        # Запоминаем результат для этой книги
-        # ВАЖНО: book_id должен быть в JSON, который присылает Go (он там есть в DTO)
+
         book_results.append({
             "book_id": book.get("book_id"), 
             "similarity": sim
@@ -78,7 +66,7 @@ def long_calculation_task(payload):
 
     result = {
         "status": 3,
-        "book_results": book_results  # <--- ОТПРАВЛЯЕМ СПИСОК В GO
+        "book_results": book_results
     }
     
     return {"id": app_id, "data": result}
